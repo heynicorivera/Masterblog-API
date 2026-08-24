@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # This will enable CORS for all routes
+CORS(app)
 
 POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
@@ -29,7 +29,24 @@ def find_post_by_id(post_id):
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    return jsonify(POSTS)
+    sort_field = request.args.get('sort')
+    direction = request.args.get('direction')
+
+    if sort_field is not None and sort_field not in ["title", "content"]:
+        message = (f"Invalid sort field: {sort_field}. "
+                   "Use 'title or 'content. ")
+        return jsonify({"error": message}), 400
+    if direction is not None and direction not in ["asc", "desc"]:
+        message = f"Invalid direction: {direction}. Use 'asc' or 'desc'."
+        return jsonify({"error": message}), 400
+
+    if sort_field is None:
+        return jsonify(POSTS)
+
+    reverse = direction == "desc"
+    sorted_posts = sorted(POSTS, key=lambda post: post[sort_field],
+                          reverse=reverse)
+    return jsonify(sorted_posts)
 
 
 @app.route('/api/posts', methods=['POST'])
